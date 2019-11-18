@@ -491,7 +491,8 @@ class Demo:
                 lbl2string = "Install driver in driver or driver/vbuf2"
                 for root, dirs, files in os.walk(sdir):
                         for file in files:
-                                if file.startswith("tw686x."):
+                                if file.startswith("tw686"):
+                                # Michele if file.startswith("tw686x."):
                                         dprint(os.path.join(root, file))
                                         lbl2string = "TW68 kernel driver exists. See readme"
 
