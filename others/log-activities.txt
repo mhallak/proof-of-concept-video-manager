@@ -1,0 +1,6 @@
+1. Found: https://linuxtv.org/wiki/index.php/V4L_capturing
+2. Installed mpv
+3. mpv av://v4l2:/dev/video0 tv:///0 works
+4. Try to find proper gstreamer pipe
+5. gst-launch-1.0 v4l2src device="/dev/video0" ! "video/x-raw, format=uyvy, framerate=25/1, width=704, height=576" ! imagefreeze ! autovideosink 
+

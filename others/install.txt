@@ -1,0 +1,10 @@
+sudo apt-get install v4l-utils
+sudo apt-get install terminator
+sudo apt-get install git-all
+sudo apt install kate
+sudo apt install sl //(train)
+sudo apt install fortune
+//For sdk_812_1.1.18_linux/demo-sample/PyGTK
+sudo apt-get install libcanberra-gtk-module
+sudo apt install mplayer
+sudo apt-get install mencoder

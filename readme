@@ -1,0 +1,24 @@
+New:
+
+Later kernels may have a built in driver for the 812.
+You may choose to use this driver instead.  No compilation or installation
+is needed, the device will appear as /dev/video0 to /dev/video7
+(or higher numbers if other V4L devices are installed).
+
+To test for built-in kernel driver run the following command in this directory:
+
+./driver.py
+
+If the built in kernel driver is present, please quit and start using
+this driver.
+
+If not, you will need to install the driver in the driver or driver/vbuf2 directory.
+
+Please try the driver in code first.  If this does not work, it is because
+the kernel does not have videobuf1 installed.  In this situation, use the
+driver in code/vbuf2.
+
+
+Kernels supported: 2.6.26 to latest (currently 4.12)
+Please note that newer versions unreleased as of 09/26/2017
+should work also.  If not, please email support@sensoray.com
