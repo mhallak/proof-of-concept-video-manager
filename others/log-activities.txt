@@ -3,4 +3,15 @@
 3. mpv av://v4l2:/dev/video0 tv:///0 works
 4. Try to find proper gstreamer pipe
 5. gst-launch-1.0 v4l2src device="/dev/video0" ! "video/x-raw, format=uyvy, framerate=25/1, width=704, height=576" ! imagefreeze ! autovideosink 
-
+6. check capabilities of camera /dev/video0
+gst-launch-1.0 --gst-debug=v4l2src:5 v4l2src device="/dev/video0" ! fakesink 2>&1 | sed -une '/caps of src/ s/[:;] /\n/gp'
+7. capture in a file:
+sensoray_testing/capture -d /dev/video1 -f -c 100 -o > input.yuv
+8. play file with gstreamer:
+gst-launch-1.0 filesrc location=./input.yuv ! videoparse height=576 width=704 format=uyvy framerate=1/25 ! queue ! videoconvert ! xvimagesink sync=false
+9. play with vlc:
+vlc --demux rawvideo --rawvid-fps 25 --rawvid-width 704 --rawvid-height 576 --rawvid-chroma UYVY input.yuv  
+10. gstreamer proper errored pipe:
+gst-launch-1.0 v4l2src device=/dev/video0 ! video/x-raw, width=704, height=576, format=UYVY ! queue ! videoconvert ! xvimagesink sync=false
+11. Probe video driver: v4l2-ctl -d /dev/video1 -D -V
+12. display kernel: tail -f /var/log/syslog
