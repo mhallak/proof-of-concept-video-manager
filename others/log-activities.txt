@@ -1,12 +1,10 @@
 1. Found: https://linuxtv.org/wiki/index.php/V4L_capturing
-2. Installed mpv
-3. mpv av://v4l2:/dev/video0 tv:///0 works
-4. Try to find proper gstreamer pipe
-5. gst-launch-1.0 v4l2src device="/dev/video0" ! "video/x-raw, format=uyvy, framerate=25/1, width=704, height=576" ! imagefreeze ! autovideosink 
+1.5 loading kernel module https://www.tecmint.com/load-and-unload-kernel-modules-in-linux/
+1.5+: mod info: /sbin/modinfo tw6869
+2. Installed mpv: mpv av://v4l2:/dev/video0 tv:///0 works
 6. check capabilities of camera /dev/video0
 gst-launch-1.0 --gst-debug=v4l2src:5 v4l2src device="/dev/video0" ! fakesink 2>&1 | sed -une '/caps of src/ s/[:;] /\n/gp'
-7. capture in a file:
-sensoray_testing/capture -d /dev/video1 -f -c 100 -o > input.yuv
+7. capture in a file: sensoray_testing/capture -d /dev/video1 -f -c 100 -o > input.yuv
 8. play file with gstreamer:
 gst-launch-1.0 filesrc location=./input.yuv ! videoparse height=576 width=704 format=uyvy framerate=1/25 ! queue ! videoconvert ! xvimagesink sync=false
 9. play with vlc:
@@ -15,3 +13,47 @@ vlc --demux rawvideo --rawvid-fps 25 --rawvid-width 704 --rawvid-height 576 --ra
 gst-launch-1.0 v4l2src device=/dev/video0 ! video/x-raw, width=704, height=576, format=UYVY ! queue ! videoconvert ! xvimagesink sync=false
 11. Probe video driver: v4l2-ctl -d /dev/video1 -D -V
 12. display kernel: tail -f /var/log/syslog
+13. Good pipe: see http://www.sensoray.com/wiki/index.php?title=812/1012_gstreamer
+ gst-launch-1.0 -v v4l2src device=/dev/video0 ! video/x-raw,format=UYVY,interlace-mode=interleaved ! videoconvert ! xvimagesink
+14. vlc: vlc v4l2:///dev/video0
+
+15. Start:
+https://developer.download.nvidia.com/embedded/L4T/r32_Release_v1.0/Docs/Accelerated_GStreamer_User_Guide.pdf?qXQjluvwcY1jULNlXsegnlP8MjAuFs9dj_ClDRWCDsNZqizARm9t6yiKQFJqeZQe4DenNx-1YVznnaEq88Wwss1wM0GUSiqW3VY6PKCARoJbVLTX_K4oyXU-6-A6RkLGa-5GnT7W87PGirJCfh2eIs9entPLDZ_p_qtRjQ21SpCOwkSav6c
+
+16. Good pipelines: ************do not use omx****
+gst-launch-1.0 filesrc location=pedestrians.mp4 ! qtdemux ! queue ! h264parse ! nvv4l2decoder ! nv3dsink -e
+better performance:
+gst-launch-1.0 filesrc location=pedestrians.mp4 ! qtdemux ! queue ! h264parse ! nvv4l2decoder enable-max-performance=1 ! nv3dsink -e
+
+17. Samples
+https://kodi.wiki/view/Samples
+
+18. Extraordinary video quality:
+gst-launch-1.0 filesrc location=jellyfish-400-mbps-4k-uhd-hevc-10bit.mkv ! matroskademux ! queue ! h265parse ! nvv4l2decoder ! nvvidconv ! 'video/x-raw(memory:NVMM), format=(string)NV12' ! nv3dsink -e
+Nice h265:
+gst-launch-1.0 filesrc location=sample_1080p_h265.mp4 ! qtdemux ! queue ! h265parse ! nvv4l2decoder ! nv3dsink -e
+Image:
+gst-launch-1.0 filesrc location=baboon.jpg ! nvjpegdec ! imagefreeze ! xvimagesink -e
+
+19. Encoding
+Should be:
+gst-launch-1.0  nvarguscamerasrc ! 'video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, format=(string)NV12, framerate=(fraction)30/1' ! nvv4l2h264enc bitrate=8000000 ! h264parse ! qtmux ! filesink location=michele_test_h264.mp4 -e
+But I tried that:
+gst-launch-1.0 videotestsrc ! 'video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, format=(string)NV12, framerate=(fraction)30/1' ! nvv4l2h264enc bitrate=8000000 ! h264parse ! qtmux ! filesink location=michele_test_h264.mp4 -e
+Problem with this testsrc to encode h264 - no camera connected right now.
+
+JPEG Encode
+gst-launch-1.0 videotestsrc num-buffers=1 ! 'video/x-raw, width=(int)640, height=(int)480,  format=(string)I420' ! nvjpegenc ! filesink location=micheletest.jpg -e
+
+20. Spoil a good image:
+gst-launch-1.0 filesrc location=baboon.jpg ! nvjpegdec ! 'video/x-raw, format=(string)I420' ! nvjpegenc ! filesink location=tryingbaboon.jpg -e
+
+21. Resolution ffmpeg
+ffmpeg -i <file name>
+
+22. Tegra release:
+head -n 1 /etc/nv_tegra_release
+[full info: cat /etc/nv_tegra_release]
+
+23. Create a h264 movie from videotestsrc with nvv4l2h264enc:
+gst-launch-1.0 videotestsrc num-buffers=300 ! 'video/x-raw, width=(int)1280, height=(int)720, format=(string)I420, framerate=(fraction)30/1' ! nvvidconv ! 'video/x-raw(memory:NVMM), format=(string)I420' ! nvv4l2h264enc bitrate=8000000 ! h264parse ! qtmux ! filesink location=michele_test_h264.mp4 -e
