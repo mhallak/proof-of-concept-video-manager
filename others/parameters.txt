@@ -1,0 +1,58 @@
+motek@motek:~$ v4l2-ctl -d /dev/video3 -D -V
+Driver Info (not using libv4l2):
+	Driver name   : TW6869
+	Card type     : TW6869
+	Bus info      : PCI:0000:02:00.0
+	Driver version: 4.9.140
+	Capabilities  : 0x85200001
+		Video Capture
+		Read/Write
+		Streaming
+		Extended Pix Format
+		Device Capabilities
+	Device Caps   : 0x05200001
+		Video Capture
+		Read/Write
+		Streaming
+		Extended Pix Format
+Format Video Capture:
+	Width/Height      : 720/576
+	Pixel Format      : 'YUYV'
+	Field             : Interlaced
+	Bytes per Line    : 1440
+	Size Image        : 829440
+	Colorspace        : SMPTE 170M
+	Transfer Function : Default (maps to Rec. 709)
+	YCbCr/HSV Encoding: Default (maps to ITU-R 601)
+	Quantization      : Default (maps to Limited Range)
+	Flags             : 
+
+	
+motek@motek:~$ arecord -f S16_LE -r 48000 -D hw:TW6869,0,7 |aplay
+Recording WAVE 'stdin' : Signed 16 bit Little Endian, Rate 48000 Hz, Mono
+Playing WAVE 'stdin' : Signed 16 bit Little Endian, Rate 48000 Hz, Mono
+underrun!!! (at least 124.153 ms long)
+
+motek@motek:~$ arecord -l
+**** List of CAPTURE Hardware Devices ****
+card 1: tegrasndt186ref [tegra-snd-t186ref-mobile-rt565x], device 0: ADMAIF1 CIF ADMAIF1-0 []
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+[...]
+card 2: TW6869 [TW6869], device 0: TW68 PCM [TW68 PCM]
+  Subdevices: 8/8
+  Subdevice #0: vch0 audio
+  Subdevice #1: vch1 audio
+  Subdevice #2: vch2 audio
+  Subdevice #3: vch3 audio
+  Subdevice #4: vch4 audio
+  Subdevice #5: vch5 audio
+  Subdevice #6: vch6 audio
+  Subdevice #7: vch7 audio
+
+/boot/extlinux/extlinux.conf:
+  6 LABEL primary
+  7       MENU LABEL primary kernel
+  8       LINUX /boot/Image
+  9       INITRD /boot/initrd
+ 10       APPEND ${cbootargs} vmalloc=512M cma=64M coherent_pool=32M quiet
