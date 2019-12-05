@@ -13,8 +13,11 @@ vlc --demux rawvideo --rawvid-fps 25 --rawvid-width 704 --rawvid-height 576 --ra
 gst-launch-1.0 v4l2src device=/dev/video0 ! video/x-raw, width=704, height=576, format=UYVY ! queue ! videoconvert ! xvimagesink sync=false
 11. Probe video driver: v4l2-ctl -d /dev/video1 -D -V
 12. display kernel: tail -f /var/log/syslog
+***********************************************************************************************************************************
 13. Good pipe: see http://www.sensoray.com/wiki/index.php?title=812/1012_gstreamer
- gst-launch-1.0 -v v4l2src device=/dev/video0 ! video/x-raw,format=UYVY,interlace-mode=interleaved ! videoconvert ! xvimagesink
+gst-launch-1.0 -v v4l2src device=/dev/video3 ! video/x-raw,format=UYVY,interlace-mode=interleaved ! videoconvert ! xvimagesink
+***************************************************************************************************************************************
+
 14. vlc: vlc v4l2:///dev/video0
 
 15. Start:
@@ -74,4 +77,60 @@ gst-launch-1.0 filesrc location=<filename.mp4> ! \
 gst-launch-1.0 filesrc location=<filename.mp4> ! \
  qtdemux! queue ! h264parse ! ! nvv4l2decoder ! nvdrmvideosink \
  conn_id=0 plane_id=1 set_mode=0 -e
+ 
+26. RTSP
+References:
+https://devtalk.nvidia.com/default/topic/1055034/jetson-tx2/how-to-generate-rtsp-stream-with-gstreamer-in-tx2/
+==> REAL: https://devtalk.nvidia.com/default/topic/1018689/jetson-tx2/vlc-playing-gstreamer-flow/post/5187270/#5187270
+sudo apt-get install libgstrtspserver-1.0 libgstreamer1.0-dev
+git clone https://github.com/GStreamer/gst-rtsp-server.git
+cd gst-rtsp-server/examples
+gcc test-launch.c -o test-launch $(pkg-config --cflags --libs gstreamer-1.0 gstreamer-rtsp-server-1.0)
+./test-launch "videotestsrc ! omxh265enc ! rtph265pay name=pay0 pt=96"
 
+27. Important note:
+VLC doesn't work on the jetson tx2 may be because no HW acceleration; the version is for the CPU only ?
+https://devtalk.nvidia.com/default/topic/1004977/jetson-tx2/vlc-not-working-on-l4t-r27-0-1-/
+
+28. Worked:
+1- Record:  gst-launch-1.0 videotestsrc ! 'video/x-raw, format=(string)I420, width=(int)640,height=(int)480' ! omxh264enc ! 'video/x-h264, stream-format=(string)byte-stream' ! h264parse !  qtmux ! filesink location=simpleencode.mp4 -e
+2- Play: gst-launch-1.0 filesrc location=./simpleencode.mp4 ! qtdemux ! queue ! h264parse ! nvv4l2decoder ! nv3dsink -e
+1- Record: gst-launch-1.0 -v v4l2src device=/dev/video3 ! 'video/x-raw, format=(string)UYVY, width=(int)640,height=(int)480, interlace-mode=interleaved' ! videoconvert ! omxh264enc ! 'video/x-h264, stream-format=(string)byte-stream' ! h264parse !  qtmux ! filesink location=xxx.mp4 -e
+2- Play: gst-launch-1.0 filesrc location=./xxx.mp4 ! qtdemux ! queue ! h264parse ! nvv4l2decoder ! nv3dsink -e 
+************************************************************************************************************************************************
+1-2: Stream camera: ./test-launch "v4l2src device="/dev/video3" ! video/x-raw,format=UYVY,interlace-mode=interleaved! videoconvert ! omxh265enc ! rtph265pay name=pay0 pt=96"
+3: On another computer: gst-launch-1.0 rtspsrc location=rtsp://172.23.40.28:8554/test ! decodebin ! xvimagesink
+************************************************************************************************************************************************
+29. Kate Issue
+Doesn't load with last session:
+https://bugs.launchpad.net/ubuntu/+source/kdesdk/+bug/774985
+
+30. Check VLC instance on UDP: vlc -vv --demux h264 --h264-fps 60 udp://@:5000
+
+31. Problems using VLC on Jetson TX2 - May be try to revert to version 2.2.4?
+https://devtalk.nvidia.com/default/topic/990198/
+        Hi Patouceul,
+        We don't have HW acceleration integrated with vlc(based on ffmpeg). Please try gstreamer or MM APIs.
+
+32. Audio: the following pipe might be ok... 
+    >> gst-launch-1.0 filesrc location=ChID-BLITS-EBU-Narration.mp4 ! qtdemux name=demux demux.audio_0 ! queue ! avdec_aac ! audioconvert ! alsasink -e
+List of audio devices:
+    >> ls /proc/asound -l
+Parameters of alsasink: device_name or card_name: ok - device: didn't find right syntax.
+
+33. tegrastat:
+EMC – memory controller 
+AVP – audio/video processor
+VDE – video decoder engine
+GR3D – GPU
+
+RAM 3330/7853MB (lfb 379x4MB) SWAP 0/3926MB (cached 0MB) CPU [13%@345,off,off,13%@345,12%@345,18%@345] EMC_FREQ 0% GR3D_FREQ 0% PLL@43.5C MCPU@43.5C PMIC@100C Tboard@41C GPU@43.5C BCPU@43.5C thermal@43.8C Tdiode@42.25C VDD_SYS_GPU 83/117 VDD_SYS_SOC 629/711 VDD_4V0_WIFI 0/15 VDD_IN 2603/2879 VDD_SYS_CPU 167/152 VDD_SYS_DDR 538/661
+RAM 3349/7853MB (lfb 378x4MB) SWAP 0/3926MB (cached 0MB) CPU [27%@499,off,off,20%@499,22%@499,25%@499] EMC_FREQ 0% GR3D_FREQ 21% PLL@42C MCPU@42C PMIC@100C Tboard@39C GPU@42C BCPU@42C thermal@41.8C Tdiode@40.75C VDD_SYS_GPU 125/104 VDD_SYS_SOC 1131/722 VDD_4V0_WIFI 0/0 VDD_IN 3670/2862 VDD_SYS_CPU 251/193 VDD_SYS_DDR 942/641
+With sudo:
+RAM 3343/7853MB (lfb 378x4MB) SWAP 0/3926MB (cached 0MB) CPU [7%@345,off,off,3%@345,4%@345,3%@345]     EMC_FREQ 1%@1062 GR3D_FREQ 0%@114 APE 150 PLL@41.5C MCPU@41.5C PMIC@100C Tboard@40C GPU@42C BCPU@41.5C thermal@41.7C Tdiode@40.5C VDD_SYS_GPU 83/83 VDD_SYS_SOC 419/381 VDD_4V0_WIFI 288/64 VDD_IN 2498/2197 VDD_SYS_CPU 125/87 VDD_SYS_DDR 443/391
+
+
+34.Pipeline for using nvv4l2h264enc with v4l2src
+gst-launch-1.0 v4l2src device="/dev/video3" num-buffers=600 ! 'video/x-raw,format=UYVY,interlace-mode=interleaved'  ! nvvidconv ! 'video/x-raw(memory:NVMM), format=(string)I420' ! nvv4l2h264enc bitrate=8000000 ! h264parse ! qtmux ! filesink location=here.mp4 -e
+
+gst-launch-1.0 v4l2src device="/dev/video3" num-buffers=600 ! 'video/x-raw,format=UYVY,interlace-mode=interleaved'  ! nvvidconv ! 'video/x-raw(memory:NVMM), format=(string)I420' ! nvv4l2h264enc bitrate=8000000 ! h264parse ! nvv4l2decoder ! nv3dsink -e
