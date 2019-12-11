@@ -8,3 +8,27 @@ sudo apt install fortune
 sudo apt-get install libcanberra-gtk-module
 sudo apt install mplayer
 sudo apt-get install mencoder
+//For: https://linuxtv.org/wiki/index.php/V4L_capturing
+sudo apt install mpv
+sudo apt install vlc
+sudo apt install meld
+sudo apt-get install openjdk-8-jdk
+sudo apt-get install openjdk-8-jdk
+sudo apt-get install default-jre
+sudo apt-get install default-jdk
+sudo apt-get install libgstrtspserver-1.0 libgstreamer1.0-dev
+Clone: https://github.com/GStreamer/gst-rtsp-server.git
+sudo add-apt-repository universe
+sudo add-apt-repository multiverse
+sudo apt-get update
+sudo apt-get install gstreamer1.0-tools gstreamer1.0-alsa \
+ gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+ gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
+ gstreamer1.0-libav
+sudo apt-get install libgstreamer1.0-dev \
+ libgstreamer-plugins-base1.0-dev \
+ libgstreamer-plugins-good1.0-dev \
+ libgstreamer-plugins-bad1.0-dev                                                                                      
+sudo apt-get install openssh-server
+sudo apt install mesa-utils
+sudo apt install gstreamer1.0-rtsp (for rtspclientsink)

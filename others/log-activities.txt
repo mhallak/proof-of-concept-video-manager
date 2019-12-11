@@ -37,6 +37,9 @@ Nice h265:
 gst-launch-1.0 filesrc location=sample_1080p_h265.mp4 ! qtdemux ! queue ! h265parse ! nvv4l2decoder ! nv3dsink -e
 Image:
 gst-launch-1.0 filesrc location=baboon.jpg ! nvjpegdec ! imagefreeze ! xvimagesink -e
+Convert 420 to 422 with ffmpeg:
+>> ffmpeg -pix_fmt yuv420p -i lena.jpg -pix_fmt yuv422p lenaffmpeg.jpg
+
 
 19. Encoding
 Should be:
@@ -67,7 +70,7 @@ gst-launch-1.0 videotestsrc pattern=1 !   video/x-raw, format=I420,  framerate=\
 Complex:
 gst-launch-1.0 videomixer name=mixer sink_1::alpha=0.5 sink_1::xpos=50 sink_1::ypos=50 ! videoconvert ! ximagesink videotestsrc pattern=snow timestamp-offset=3000000000 ! "video/x-raw,format=AYUV,framerate=(fraction)30/1,width=640,height=480" !   timeoverlay ! queue2 ! mixer. videotestsrc pattern=smpte !  "video/x-raw,format=AYUV,framerate=(fraction)10/1,width=800,height=600" ! queue2 ! mixer.
 
-25. DRM Video sink
+25. DRM      Video sink
 - Stop display manager:
 sudo systemctl stop gdm
 sudo loginctl terminate-seat seat0
@@ -113,7 +116,7 @@ https://devtalk.nvidia.com/default/topic/990198/
         We don't have HW acceleration integrated with vlc(based on ffmpeg). Please try gstreamer or MM APIs.
 
 32. Audio: the following pipe might be ok... 
-    >> gst-launch-1.0 filesrc location=ChID-BLITS-EBU-Narration.mp4 ! qtdemux name=demux demux.audio_0 ! queue ! avdec_aac ! audioconvert ! alsasink -e
+    >> gst-launch-1.0 filesrc lgst-launch-1.0 v4l2src device=/dev/video3 ! video/x-raw(memory:NVMM), width=(int)720, height=(int)576,format=UYVY,interlace-mode=interleaved framerate=(fraction)30/1 ! videoconvert ! xvimagesinkocation=ChID-BLITS-EBU-Narration.mp4 ! qtdemux name=demux demux.audio_0 ! queue ! avdec_aac ! audioconvert ! alsasink -e
 List of audio devices:
     >> ls /proc/asound -l
 Parameters of alsasink: device_name or card_name: ok - device: didn't find right syntax.
@@ -133,4 +136,34 @@ RAM 3343/7853MB (lfb 378x4MB) SWAP 0/3926MB (cached 0MB) CPU [7%@345,off,off,3%@
 34.Pipeline for using nvv4l2h264enc with v4l2src
 gst-launch-1.0 v4l2src device="/dev/video3" num-buffers=600 ! 'video/x-raw,format=UYVY,interlace-mode=interleaved'  ! nvvidconv ! 'video/x-raw(memory:NVMM), format=(string)I420' ! nvv4l2h264enc bitrate=8000000 ! h264parse ! qtmux ! filesink location=here.mp4 -e
 
+*************************************************************************VIDEO CONVERT***************************************
+gst-launch-1.0 v4l2src device=/dev/video3 ! 'video/x-raw, format=(string)UYVY, interlace-mode=interleaved' ! nvvidconv ! 'video/x-raw(memory:NVMM), format=(string)I420' ! nvv4l2h264enc ! 'video/x-h264, stream-format=(string)byte-stream' ! h264parse ! qtmux ! filesink location=test.mp4 -e
+***************************************************************************************************************************
+
 gst-launch-1.0 v4l2src device="/dev/video3" num-buffers=600 ! 'video/x-raw,format=UYVY,interlace-mode=interleaved'  ! nvvidconv ! 'video/x-raw(memory:NVMM), format=(string)I420' ! nvv4l2h264enc bitrate=8000000 ! h264parse ! nvv4l2decoder ! nv3dsink -e
+
+35.
+video/x-raw is CPU buffer.
+video/x-raw(memory:NVMM) is DMA buffer.
+
+36.
+What in the hell is DRM?
+
+The DRM layer is intended to support the needs of complex graphics devices, usually containing programmable pipelines well suited to 3D graphics acceleration. It deals with:
+
+ - A DMA queue for graphic buffers transfers.
+ - It provides locks for graphics hardware, treating it as shared resource for simultaneous 3D applications.
+ - And it provides secure hardware access, preventing clients from escalating privileges.
+The DRM layer consists of two in-kernel drivers: a generic DRM driver, and another which has specific support for the video hardware. This is possible because the DRM engine is extensible, enabling the device-specific driver to hook out those functionalities that are required by the hardware. For example, in the case of the Intel cards, the Linux kernel driver i915 supports this card and couples its capabilities to the DRM driver.
+
+37.
+gst-launch-1.0 nvcompositor name=comp sink_0::xpos=0 sink_0::ypos=0 sink_0::width=1920 sink_0::height=1080 sink_1::xpos=0 sink_1::ypos=0 sink_1::width=1600 sink_1::height=1024 sink_2::xpos=0  sink_2::ypos=0 sink_2::width=1366 sink_2::height=768 sink_3::xpos=0 sink_3::ypos=0 sink_3::width=1024 sink_3::height=576 ! nvoverlaysink display-id=1 filesrc location=<filename_h264_1080p_30fps.mp4> ! qtdemux ! h264parse ! omxh264dec ! comp. filesrc location=< filename_h265_1080p_30fps.mp4> ! qtdemux ! h265parse ! omxh265dec ! comp. filesrc  location=< filename_vp8_1080p_30fps.webm> matroskademux ! omxvp8dec ! comp. filesrc location=<filename_vp9_1080p_30fps.webm> ! matroskademux ! omxvp9dec ! comp. -e
+
+gst-launch-1.0 nvcompositor name=comp sink_0::xpos=0 sink_0::ypos=0 sink_0::width=1920 sink_0::height=1080 sink_1::xpos=0 sink_1::ypos=0 sink_1::width=1600 sink_1::height=1024 sink_2::xpos=0  sink_2::ypos=0 sink_2::width=1366 sink_2::height=768 sink_3::xpos=0 sink_3::ypos=0 sink_3::width=1024 sink_3::height=576 ! nvoverlaysink display-id=1 filesrc location=TextInMotion-VideoSample-1080p_h264.mp4 ! qtdemux ! h264parse ! omxh264dec ! comp. filesrc location=sample_1080p_h265.mp4 ! qtdemux ! h265parse ! omxh265dec ! comp. filesrc  location= tears_of_steel_1080p_vp8.webm matroskademux ! omxvp8dec ! comp. filesrc location=tears_of_steel_1080p_vp9.webm ! matroskademux ! omxvp9dec ! comp. -e
+
+gst-launch-1.0 nvcompositor name=comp sink_0::xpos=0 sink_0::ypos=0 sink_0::width=1920 sink_0::height=1080 ! autovideoconvert ! nvoverlaysink sync=0 videotestsrc ! comp.
+
+
+38. With OREN
+UDP:
+gst-launch-1.0 v4l2src device=/dev/video3 ! video/x-raw,format=UYVY, interlace-mode=interleaved ! nvvidconv ! 'video/x-raw(memory:NVMM), format=(string)NV12, framerate=(fraction)25/1' ! nvv4l2h264enc bitrate=8000000 ! h264parse ! rtph264pay mtu=1400 ! udpsink host=44.44.44.2 port=5000 sync=false async=false
