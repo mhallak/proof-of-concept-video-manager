@@ -51,7 +51,8 @@ Problem with this testsrc to encode h264 - no camera connected right now.
 JPEG Encode
 gst-launch-1.0 videotestsrc num-buffers=1 ! 'video/x-raw, width=(int)640, height=(int)480,  format=(string)I420' ! nvjpegenc ! filesink location=micheletest.jpg -e
 
-20. Spoil a good image:
+20. Spoil a good image: ./test-launch "( v4l2src device=/dev/video3 ! video/x-raw, format=UYVY,  width=720, height=576, interlace-mode=interleaved ! nvvidconv ! video/x-raw(memory:NVMM), width=720, height=576, format=(string)NV12, framerate=(fraction)25/1 ! nvv4l2h264enc bitrate=8000000 ! h264parse ! rtph264pay name=pay0 pt=96 )"
+
 gst-launch-1.0 filesrc location=baboon.jpg ! nvjpegdec ! 'video/x-raw, format=(string)I420' ! nvjpegenc ! filesink location=tryingbaboon.jpg -e
 
 21. Resolution ffmpeg
@@ -167,3 +168,10 @@ gst-launch-1.0 nvcompositor name=comp sink_0::xpos=0 sink_0::ypos=0 sink_0::widt
 38. With OREN
 UDP:
 gst-launch-1.0 v4l2src device=/dev/video3 ! video/x-raw,format=UYVY, interlace-mode=interleaved ! nvvidconv ! 'video/x-raw(memory:NVMM), format=(string)NV12, framerate=(fraction)25/1' ! nvv4l2h264enc bitrate=8000000 ! h264parse ! rtph264pay mtu=1400 ! udpsink host=44.44.44.2 port=5000 sync=false async=false
+
+
+RTSPClientSink not supported for jetson tx2: https://devtalk.nvidia.com/default/topic/1055034/jetson-tx2/how-to-generate-rtsp-stream-with-gstreamer-in-tx2/
+
+
+Frozen stream: just one buffer
+ ./test-launch "( v4l2src device=/dev/video3 ! video/x-raw, format=UYVY,  width=720, height=576, interlace-mode=interleaved ! nvvidconv ! video/x-raw(memory:NVMM), width=720, height=576, format=(string)NV12, framerate=(fraction)25/1 ! nvv4l2h264enc bitrate=8000000 ! h264parse ! rtph264pay name=pay0 pt=96 )"
