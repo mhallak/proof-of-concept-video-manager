@@ -243,7 +243,3 @@ tar -jtvf public_sources.tbz2
   ==> WORKS: ./test-launch "( v4l2src device=/dev/video3 num-buffers=10000 ! video/x-raw, format=UYVY,  width=720, height=576, interlace-mode=interleaved ! nvvidconv ! video/x-raw(memory:NVMM), width=720, height=576, format=(string)NV12, framerate=(fraction)25/1 ! nvv4l2h264enc bitrate=8000000 ! h264parse ! rtph264pay name=pay0 pt=96 )"
 
   
-
-
-
-

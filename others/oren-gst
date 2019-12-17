@@ -1,0 +1,101 @@
+
+~/gst-rtsp-server/examples$  test-launch
+
+
+server udp
+gst-launch-1.0 v4l2src device=/dev/video3 ! 'video/x-raw(memory:NVMM), width=(int)720, height=(int)576, format=UYVY, framerate=(fraction)30/1' ! nvv4l2h264enc maxperf-enable=1 bitrate=8000000 ! h264parse !rtph264pay mtu=1400 ! udpsink host=192.168.x.x port=12345 sync=false async=false
+
+
+gst-launch-1.0 v4l2src device=/dev/video3 ! 'video/x-raw(memory:NVMM), width=(int)720, height=(int)576, format=UYVY, framerate=(fraction)30/1' ! nvv4l2h264enc maxperf-enable=1 bitrate=8000000 ! h264parse !rtph264pay mtu=1400 ! 
+
+
+gst-launch-1.0 v4l2src device=/dev/video3 ! video/x-raw(memory:NVMM), width=(int)720, height=(int)576,format=UYVY,interlace-mode=interleaved, framerate=(fraction)30/1 ! videoconvert ! xvimagesink
+
+
+
+
+server
+gst-launch-1.0 nvcamerasrc fpsRange="30 30" intent=3 ! nvvidconv flip-method=6 \
+! 'video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, format=(string)I420, framerate=(fraction)30/1' ! \
+omxh265enc low-latency=1 control-rate=2 bitrate=4000000 ! 'video/x-h265, stream-format=(string)byte-stream' ! \
+h265parse ! mpegtsmux alignment=7 ! udpsink host=$CLIENT_IP port=5000 sync=false async=false
+
+
+client
+gst-launch-1.0 udpsrc port=5000 ! video/mpegts ! tsparse ! tsdemux ! h265parse ! queue ! avdec_h265 ! xvimagesink sync=false async=false -e
+
+
+
+./test-launch "v4l2src device="/dev/video3" num-buffers=600 ! 'video/x-raw,format=UYVY,interlace-mode=interleaved'  ! nvvidconv ! 'video/x-raw(memory:NVMM), format=(string)I420' ! nvv4l2h264enc bitrate=8000000 ! h264parse ! qtmux ! rtph264pay name=pay0 pt=96"
+
+./test-launch "v4l2src device=/dev/video3 num-buffers=6000 ! video/x-raw, format=UYVY, interlace-mode=interleaved ! nvvidconv ! video/x-raw(memory:NVMM), format=(string)I420 ! nvv4l2h264enc bitrate=8000000 ! h264parse ! queue ! nvvidconv ! rtph264pay name=pay0 pt=96"
+
+
+
+
+
+/************************************************************************************************************************************************************************************************/
+
+server
+
+gst-launch-1.0 v4l2src device=/dev/video1 ! 'video/x-raw, format=YUY2' ! nvvidconv ! 'video/x-raw(memory:NVMM), width=640, height=480' ! omxh264enc ! h264parse ! rtph264pay config-interval=1 ! udpsink host=<HOST_IP> port=5000
+
+client
+
+gst-launch-1.0 udpsrc port=5000 ! 'application/x-rtp, encoding-name=H264, payload=96' ! rtph264depay ! h264parse ! avdec_h264 ! xvimagesink
+
+
+
+
+
+./gst-launch-1.0 -vvv -e v4l2src device=/dev/video0 ! tee name=t ! queue ! videoconvert ! omxh265enc bitrate=750000 ! video/x-h265, width=1920, height=1080, framerate=60/1, stream-format=byte-stream ! rtspclientsink location=rtsp://192.168.1.133:1935/live/JetsonNano
+./gst-launch-1.0 -vvv -e v4l2src device=/dev/video0 ! tee name=t ! queue ! videoconvert ! omxh264enc bitrate=750000 ! video/x-h264, width=1280, height=720, framerate=30/1, stream-format=byte-stream ! rtspclientsink location=rtsp://192.168.1.133:1935/live/JetsonNano
+./gst-launch-1.0 -vvv -e v4l2src device=/dev/video0 ! tee name=t ! queue ! videoconvert ! omxh264enc bitrate=750000 ! video/x-h264, width=1280, height=720, framerate=30/1, stream-format=byte-stream ! rtspclientsink location=rtsp://192.168.1.133:1935/live/JetsonNano
+
+
+
+./test-launch "v4l2src device=/dev/video0 ! video/x-raw, width=1920, height=1080, framerate=60/1, format=I420 ! nvvidconv ! video/x-raw(memory:NVMM), width=1920, height=1080, format=I420 ! omxh265enc bitrate=2500000 ! video/x-h265, width=1920, height=1080, stream-format=byte-stream, bitrate=5000 ! rtph265pay name=pay0 pt=96"
+
+
+
+gst-launch-1.0 rtspsrc location=rtsp://127.0.0.1:8554/test  ! 'application/x-rtp, media=video' ! decodebin ! videoconvert ! ximagesink
+
+
+Server
+gst-OMX
+CLIENT_IP=<IP_ADDRESS>
+gst-launch-1.0 -e nvarguscamerasrc ! 'video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, format=(string)NV12, framerate=(fraction)30/1' \
+! nvvidconv ! 'video/x-ra./test-launch "v4l2src device="/dev/video3" ! video/x-raw,format=UYVY,interlace-mode=interleaved! videoconvert ! omxh265enc ! rtph265pay name=pay0 pt=96"w(memory:NVMM), format=(string)I420' ! omxh264enc control-rate=2 bitrate=4000000 ! 'video/x-h264, stream-format=(string)byte-stream' \
+! h264parse ! rtph264pay mtu=1400 ! udpsink host=$CLIENT_IP port=5000 sync=false async=false
+
+gst-V4L2
+CLIENT_IP=<IP_ADDRESS>
+
+gst-launch-1.0 v4l2src device=/dev/video3 ! video/x-raw,format=UYVY, interlace-mode=interleaved ! nvvidconv ! 'video/x-raw(memory:NVMM), format=(string)NV12, framerate=(fraction)25/1' ! nvv4l2h264enc bitrate=8000000 ! h264parse ! rtph264pay mtu=1400 ! udpsink host=44.44.44.1 port=5000 sync=false async=false
+
+
+PC client
+gst-launch-1.0 udpsrc port=5000 ! application/x-rtp,encoding-name=H264,payload=96 ! rtph264depay ! h264parse ! queue ! avdec_h264 ! xvimagesink sync=false async=false -e
+
+
+
+https://developer.ridgerun.com/wiki/index.php?title=Xavier/GStreamer_Pipelines/H264
+https://devtalk.nvidia.com/default/topic/1049673/jetson-nano/omx-hardware-encoding-cpu-at-100-solved-/
+https://devtalk.nvidia.com/default/topic/1062386/jetson-tx2/gst-rtsp-server-problem-on-jetson-tx2/
+
+
+
+/*********************************************************************************************************************/
+
+
+gst-launch-1.0 v4l2src device=/dev/video3 ! video/x-raw,format=UYVY, interlace-mode=interleaved ! nvvidconv ! 'video/x-raw(memory:NVMM), format=(string)NV12, framerate=(fraction)25/1' ! nvv4l2h264enc bitrate=8000000 ! h264parse ! rtph264pay mtu=1400 ! udpsink host=44.44.44.2 port=5000 sync=false async=false
+
+
+
+
+/********************/
+
+
+
+ ./test-launch "( v4l2src device=/dev/video3 num-buffers=100  ! video/x-raw, format=UYVY,  width=720, height=576, interlace-mode=interleaved ! nvvidconv ! video/x-raw(memory:NVMM), width=720, height=576, format=(string)NV12, framerate=(fraction)25/1 ! nvv4l2h264enc bitrate=8000000 ! h264parse ! rtph264pay name=pay0 pt=96 )"
+
