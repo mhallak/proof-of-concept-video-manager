@@ -51,7 +51,8 @@ Problem with this testsrc to encode h264 - no camera connected right now.
 JPEG Encode
 gst-launch-1.0 videotestsrc num-buffers=1 ! 'video/x-raw, width=(int)640, height=(int)480,  format=(string)I420' ! nvjpegenc ! filesink location=micheletest.jpg -e
 
-20. Spoil a good image:
+20. Spoil a good image: ./test-launch "( v4l2src device=/dev/video3 ! video/x-raw, format=UYVY,  width=720, height=576, interlace-mode=interleaved ! nvvidconv ! video/x-raw(memory:NVMM), width=720, height=576, format=(string)NV12, framerate=(fraction)25/1 ! nvv4l2h264enc bitrate=8000000 ! h264parse ! rtph264pay name=pay0 pt=96 )"
+
 gst-launch-1.0 filesrc location=baboon.jpg ! nvjpegdec ! 'video/x-raw, format=(string)I420' ! nvjpegenc ! filesink location=tryingbaboon.jpg -e
 
 21. Resolution ffmpeg
@@ -80,7 +81,8 @@ gst-launch-1.0 filesrc location=<filename.mp4> ! \
 gst-launch-1.0 filesrc location=<filename.mp4> ! \
  qtdemux! queue ! h264parse ! ! nvv4l2decoder ! nvdrmvideosink \
  conn_id=0 plane_id=1 set_mode=0 -e
- 
+- gst-launch-1.0 filesrc location=pedestrians.mp4 ! qtdemux name=demux ! h264parse  ! nvv4l2decoder ! nvvidconv interpolation-method=1 ! 'video/x-raw(memory:NVMM), format=(string)I420, width=1280, height=720' ! nvdrmvideosink -e
+
 26. RTSP
 References:
 https://devtalk.nvidia.com/default/topic/1055034/jetson-tx2/how-to-generate-rtsp-stream-with-gstreamer-in-tx2/
@@ -167,3 +169,81 @@ gst-launch-1.0 nvcompositor name=comp sink_0::xpos=0 sink_0::ypos=0 sink_0::widt
 38. With OREN
 UDP:
 gst-launch-1.0 v4l2src device=/dev/video3 ! video/x-raw,format=UYVY, interlace-mode=interleaved ! nvvidconv ! 'video/x-raw(memory:NVMM), format=(string)NV12, framerate=(fraction)25/1' ! nvv4l2h264enc bitrate=8000000 ! h264parse ! rtph264pay mtu=1400 ! udpsink host=44.44.44.2 port=5000 sync=false async=false
+
+
+RTSPClientSink not supported for jetson tx2: https://devtalk.nvidia.com/default/topic/1055034/jetson-tx2/how-to-generate-rtsp-stream-with-gstreamer-in-tx2/
+
+
+Frozen stream: just one buffer
+ ./test-launch "( v4l2src device=/dev/video3 ! video/x-raw, format=UYVY,  width=720, height=576, interlace-mode=interleaved ! nvvidconv ! video/x-raw(memory:NVMM), width=720, height=576, format=(string)NV12, framerate=(fraction)25/1 ! nvv4l2h264enc bitrate=8000000 ! h264parse ! rtph264pay name=pay0 pt=96 )"
+ 
+ 
+39. Error when drm but without stopping drm:
+
+motek@motek:~/Videos$ gst-launch-1.0 filesrc location=pedestrians.mp4 ! qtdemux name=demux ! h264parse  ! nvv4l2decoder ! nvvidconv interpolation-method=1 ! 'video/x-raw(memory:NVMM), format=(string)I420, width=1280, height=720' ! nvdrmvideosink -e
+Setting pipeline to PAUSED ...
+Opening in BLOCKING MODE 
+Pipeline is PREROLLING ...
+NvMMLiteOpen : Block : BlockType = 261 
+NVMEDIA: Reading vendor.tegra.display-size : status: 6 
+NvMMLiteBlockCreate : Block : BlockType = 261 
+Failed to set plane 
+Failed to display frame buffer
+ERROR: from element /GstPipeline:pipeline0/GstQTDemux:demux: Internal data stream error.
+Additional debug info:
+qtdemux.c(6073): gst_qtdemux_loop (): /GstPipeline:pipeline0/GstQTDemux:demux:
+streaming stopped, reason error (-5)
+ERROR: pipeline doesn't want to preroll.
+Setting pipeline to NULL ...
+Freeing pipeline ...
+
+40. Simulate EGLStream producer pipeline
+nvgstcapture-1.0 --camsrc=3
+
+41.
+Reader reads but errors on the console:
+GST_DEBUG=2,v4l2*=7 ./test-launch "videotestsrc num-buffers=9000 is-live=true ! video/x-raw,width=(int)1920,height=(int)1080,framerate=30/1,format=NV12 ! nvvideoconvert ! video/x-raw(memory:NVMM),width=(int)1920,height=(int)1080,framerate=30/1,format=NV12 ! nvv4l2h264enc bufapi-version=True ! h264parse ! rtph264pay name=pay0"
+
+Crashes when:
+GST_DEBUG=2,v4l2*=7 ./test-launch "videotestsrc num-buffers=9000 is-live=true ! video/x-raw,width=(int)720, height=(int)576, format=UYVY, interlace-mode=interleaved ! nvvidconv ! video/x-raw(memory:NVMM),width=(int)1920,height=(int)1080,framerate=30/1,format=NV12 ! nvv4l2h264enc bufapi-version=True ! h264parse ! rtph264pay name=pay0"
+
+or: GST_DEBUG=2,v4l2*=7 ./test-launch "v4l2src device=/dev/video3 num-buffers=9000 ! video/x-raw,width=(int)720,height=(int)576,format=UYVY, interlace-mode=interleaved ! nvvidconv ! video/x-raw(memory:NVMM),width=(int)1920,height=(int)1080,framerate=30/1,format=NV12 ! nvv4l2h264enc bufapi-version=True ! h264parse ! rtph264pay name=pay0"
+
+See: https://devtalk.nvidia.com/default/topic/1057526/deepstream-sdk/nvv4l2-encoder-crashes-on-a-particular-case/
+See: https://bugzilla.gnome.org/show_bug.cgi?id=796525
+
+42. Deepstream
+Supports:
+https://docs.nvidia.com/metropolis/deepstream/plugin-manual/index.html#page/DeepStream_Plugin_Manual%2Fdeepstream_plugin_faq.html%23wwpID0EGHA
+
+43. Note
+It seems that we need to add /usr/lib/aarch64-linux-gnu/ to the LD_LIBRARY_PATH
+
+44. Check what is in a tar file
+tar -jtvf public_sources.tbz2 
+
+45. Compile nvv4l2 libraries:
+  a- download L4T 32.2 public public_sources
+  b- untar gst-nvvideo4linux2_src.tbz2
+        tar -I lbzip2 -xvf gst-nvvideo4linux2_src.tbz2
+        or
+        tar xvf gst-nvvideo4linux2_src.tbz2
+  c- cd gst-v4l2
+  d- make
+  e- sudo DEST_DIR=/usr/local/lib make install 
+      ==> but it didn't put in /usr/local/lib but in /usr/lib/aarch64-linux-gnu/gstreamer-1.0
+  f- correct:
+        gstv4l2videoenc.c
+        diff gstv4l2videoenc_org.c gst-nvvideo4linux2_src/gst-v4l2/gstv4l2videoenc.c 
+            867a868,871
+            >   /* Only renegotiate on upstream changes */
+            >   if (self->input_state)
+            >     return TRUE;
+  g- compile, install
+  ==> WORKS: ./test-launch "( v4l2src device=/dev/video3 num-buffers=10000 ! video/x-raw, format=UYVY,  width=720, height=576, interlace-mode=interleaved ! nvvidconv ! video/x-raw(memory:NVMM), width=720, height=576, format=(string)NV12, framerate=(fraction)25/1 ! nvv4l2h264enc bitrate=8000000 ! h264parse ! rtph264pay name=pay0 pt=96 )"
+
+  
+
+
+
+

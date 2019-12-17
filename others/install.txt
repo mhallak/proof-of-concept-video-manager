@@ -32,3 +32,7 @@ sudo apt-get install libgstreamer1.0-dev \
 sudo apt-get install openssh-server
 sudo apt install mesa-utils
 sudo apt install gstreamer1.0-rtsp (for rtspclientsink)
+
+sudo gst-install --prefix=/home/motek/gst-1.14.5 --version=1.14.5
+sudo apt install tree
+sudo apt install lbzip2
