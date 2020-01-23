@@ -1,0 +1,4 @@
+In order to see udp stream, one needs to configure the JTX2 with GST_DEBUG=3
+gst-launch-1.0 -v udpsrc uri=udp://44.44.44.2:5000 caps="application/x-rtp, media=(string)video, clock-rate=(int)90000,encoding-name=(string)H264,packetization-mode=(string)1,profile-level-id=(string)640028,payload=(int)96, a-framerate=(string)25" ! rtph264depay ! h264parse ! decodebin ! fpsdisplaysink video-sink=xvimagesink
+
+gst-launch-1.0 rtspsrc location=rtsp://44.44.44.1:8554/test latency=100 ! queue ! decodebin ! xvimagesink

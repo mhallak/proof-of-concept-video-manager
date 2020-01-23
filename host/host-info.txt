@@ -1,0 +1,10 @@
+capture/restore image: 
+	https://elinux.org/Jetson/TX2_Cloning
+
+Cloning the image:
+	 $ sudo ./flash.sh -r -k APP -G backup.img jetson-tx2 mmcblk0p1
+Copy backup raw image to flashing directory:
+	 $ sudo cp backup.img.raw bootloader/system.img
+****Michele: from experience, copy also $ sudo cp backup.img.raw bootloader/system.img.raw
+Restoring image:
+	  $ sudo ./flash.sh -r -k APP jetson-tx2 mmcblk0p1
