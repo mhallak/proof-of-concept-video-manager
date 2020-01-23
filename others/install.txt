@@ -5,7 +5,6 @@ sudo apt install kate
 sudo apt install sl //(train)
 sudo apt install fortune
 //For sdk_812_1.1.18_linux/demo-sample/PyGTK
-git clone https://github.com/ross-newman/sensoray-testing.git
 sudo apt-get install libcanberra-gtk-module
 sudo apt install mplayer
 sudo apt-get install mencoder
@@ -37,3 +36,6 @@ sudo apt install gstreamer1.0-rtsp (for rtspclientsink)
 sudo gst-install --prefix=/home/motek/gst-1.14.5 --version=1.14.5
 sudo apt install tree
 sudo apt install lbzip2
+sudo apt install htop
+sudo apt install slurm
+sudo apt install tcptrack
